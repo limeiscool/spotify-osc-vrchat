@@ -1,28 +1,34 @@
 "use client";
-
+import type { NextPage, GetServerSideProps, InferGetServerSidePropsType } from "next";
 import React, { useState, useEffect } from 'react';
 
-import Login from "./components/Login";
-import WebPlayback from "./components/WebPlayback";
-export default function Home() {
-  const [token, setToken] = useState<string>('');
+import WebPlayback from "../components/WebPlayback";
 
-  useEffect(() => {
+type Props = {
+  token: string;
+};
 
-    async function getToken() {
-      const response = await fetch('api/auth/token');
-      const json = await response.json();
-      setToken(json.access_token);
-    }
+export const getServerSideProps: GetServerSideProps = (async (context) => {
+  if (context.req.cookies["spotify-token"]) {
+    const token: string = context.req.cookies["spotify-token"];
+    return {
+      props: { token },
+    };
+  } else {
+    return {
+      props: { token: "" },
+    };
+  }
+}) satisfies GetServerSideProps<Props>;
 
-    getToken();
 
-  }, []);
-
-
+export default function Home({
+  token,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+ 
   return (
     <>
-    {(token === '') ? <Login/> : <WebPlayback token={token} />}
+      <WebPlayback token={token} />
     </>
   );
 }
