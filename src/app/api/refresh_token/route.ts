@@ -7,11 +7,11 @@ const client_secret = process.env.SPOTIFY_CLIENT_SECRET as string;
 
 interface SpotifyTokenResponse {
   access_token: string;
-  refresh_token: string;
   expires_in: number;
+  refresh_token?: string;
 }
 
-async function getAccessToken(code: string): Promise<SpotifyTokenResponse> {
+async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenResponse> {
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {
@@ -19,41 +19,42 @@ async function getAccessToken(code: string): Promise<SpotifyTokenResponse> {
       'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64')
     },
     body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback`,
-      client_id: client_id,
-      client_secret: client_secret
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken
     }).toString()
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get access token');
+    throw new Error('Failed to refresh access token');
   }
 
   return response.json();
 }
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get('code');
+  const refreshToken = req.cookies.get('spotify-refresh-token')?.value;
 
-  if (!code) {
+  if (!refreshToken) {
     return NextResponse.redirect('/login');
   }
 
   try {
-    const { access_token, refresh_token, expires_in } = await getAccessToken(code);
+    const newTokens = await refreshAccessToken(refreshToken);
+    const { access_token, expires_in, refresh_token: newRefreshToken } = newTokens;
+
     const currentTime = Math.floor(Date.now() / 1000);
 
-    // Set tokens in cookies
+    // Update cookies
     setCookie('spotify-token', access_token, { maxAge: expires_in });
-    setCookie('spotify-refresh-token', refresh_token);
     setCookie('spotify-token-expiry', currentTime + expires_in);
+
+    if (newRefreshToken) {
+      setCookie('spotify-refresh-token', newRefreshToken);
+    }
 
     return NextResponse.redirect('/');
   } catch (error) {
-    console.error('Error getting access token:', error);
+    console.error('Error refreshing token:', error);
     return NextResponse.redirect('/login');
   }
 }

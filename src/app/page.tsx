@@ -1,6 +1,5 @@
 "use client";
-import type { NextPage, GetServerSideProps, InferGetServerSidePropsType } from "next";
-import React, { useState, useEffect } from 'react';
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 
 import WebPlayback from "../components/WebPlayback";
 
@@ -9,16 +8,10 @@ type Props = {
 };
 
 export const getServerSideProps: GetServerSideProps = (async (context) => {
-  if (context.req.cookies["spotify-token"]) {
-    const token: string = context.req.cookies["spotify-token"];
-    return {
-      props: { token },
-    };
-  } else {
-    return {
-      props: { token: "" },
-    };
-  }
+  const token = context.req.cookies["spotify-token"] || "";
+  return {
+    props: { token },
+  };
 }) satisfies GetServerSideProps<Props>;
 
 
