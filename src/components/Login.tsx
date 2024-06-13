@@ -1,25 +1,15 @@
+"use client";
 import Link from 'next/link'
-import React, { PropsWithChildren } from 'react';
+import React from 'react';
 
 function LoginComponent() {
 
-  async function handleGetAccessToken() {
-
-    try {
-      const response = await fetch('api/auth/login', {
-        method: 'GET',
-        
-      })
-    } catch (error: any) {
-      console.log(error.reqsponse.data.error)
-    }
-  }
-
     return (
         <div className="App">
-          <button onClick={handleGetAccessToken}>
-            Login with Spotify
-          </button>
+          <Link href="/api/auth/login">
+              Login with Spotify
+          </Link>
+          
         </div>
     );
 }

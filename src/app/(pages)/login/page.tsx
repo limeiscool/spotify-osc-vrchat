@@ -1,4 +1,4 @@
-
+"use client";
 import LoginComponent from "@/components/Login";
 
 

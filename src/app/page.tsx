@@ -1,27 +1,37 @@
 "use client";
-import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 
+import { useEffect, useState } from 'react';
 import WebPlayback from "../components/WebPlayback";
 
-type Props = {
-  token: string;
-};
-
-export const getServerSideProps: GetServerSideProps = (async (context) => {
-  const token = context.req.cookies["spotify-token"] || "";
-  return {
-    props: { token },
-  };
-}) satisfies GetServerSideProps<Props>;
 
 
-export default function Home({
-  token,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+
+
+export default function Home() {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchToken() {
+      try {
+        const response = await fetch('/api/token');
+        if (response.ok) {
+          const data = await response.json();
+          setToken(data.token);
+        } else {
+          console.error('Failed to retrieve token');
+        }
+      } catch (error) {
+        console.error('Error fetching token:', error);
+      }
+    }
+
+    fetchToken();
+  }, []);
+
  
   return (
     <>
-      <WebPlayback token={token} />
+      {token && <WebPlayback token={token} />}
     </>
   );
 }

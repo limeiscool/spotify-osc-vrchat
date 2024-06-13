@@ -52,9 +52,9 @@ export async function GET(req: NextRequest) {
       setCookie('spotify-refresh-token', newRefreshToken);
     }
 
-    return NextResponse.redirect('/');
+    return NextResponse.redirect(new URL('/', req.url));
   } catch (error) {
     console.error('Error refreshing token:', error);
-    return NextResponse.redirect('/login');
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 }

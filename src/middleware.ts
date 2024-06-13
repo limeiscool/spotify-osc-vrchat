@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  const isPublic = path === '/login'
+  const isPublic = path === '/login' || path === '/auth/callback'
 
   const token = request.cookies.get('spotify-token')?.value || ''
 
@@ -27,6 +27,7 @@ export async function middleware(request: NextRequest) {
 
   // if on private route without access token, redirect to login
   if (!isPublic && !token) {
+    console.log("middleware redirected to login")
     return NextResponse.redirect(new URL('/login', request.url))
   }
 }

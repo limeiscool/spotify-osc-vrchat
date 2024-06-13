@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { generateRandomString } from '@/utils/generateRandomString';
 
 const client_id = process.env.SPOTIFY_CLIENT_ID as string;
-const redirect_uri = `${process.env.NEXTAUTH_URL}/api/auth/callback`;
+const redirect_uri = `${process.env.NEXTAUTH_URL}/auth/callback`;
 
 
 

@@ -4,6 +4,7 @@ import { setCookie } from 'cookies-next';
 
 const client_id = process.env.SPOTIFY_CLIENT_ID as string;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET as string;
+const redirect_uri = `${process.env.NEXTAUTH_URL}/auth/callback` as string;
 
 interface SpotifyTokenResponse {
   access_token: string;
@@ -21,11 +22,13 @@ async function getAccessToken(code: string): Promise<SpotifyTokenResponse> {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback`,
+      redirect_uri: redirect_uri,
       client_id: client_id,
       client_secret: client_secret
     }).toString()
   });
+
+  console.log("response", response)
 
   if (!response.ok) {
     throw new Error('Failed to get access token');
@@ -34,26 +37,28 @@ async function getAccessToken(code: string): Promise<SpotifyTokenResponse> {
   return response.json();
 }
 
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const code = url.searchParams.get('code');
-
-  if (!code) {
-    return NextResponse.redirect('/login');
-  }
-
+export async function POST(req: NextRequest) {
+  // get code from the request body
   try {
+    const { code, state } = await req.json();
+
+    if (!state) {
+      return NextResponse.json({ error: 'state_mismatch' }, { status: 400 });
+    }
+
     const { access_token, refresh_token, expires_in } = await getAccessToken(code);
     const currentTime = Math.floor(Date.now() / 1000);
 
-    // Set tokens in cookies
-    setCookie('spotify-token', access_token, { maxAge: expires_in });
-    setCookie('spotify-refresh-token', refresh_token);
-    setCookie('spotify-token-expiry', currentTime + expires_in);
+    const response = NextResponse.json({ success: true }, { status: 200 });
 
-    return NextResponse.redirect('/');
+    // Set tokens in cookies
+    response.cookies.set('spotify-token', access_token, { maxAge: expires_in });
+    response.cookies.set('spotify-refresh-token', refresh_token);
+    response.cookies.set('spotify-token-expiry', String(currentTime + expires_in));
+
+    return response;
   } catch (error) {
-    console.error('Error getting access token:', error);
-    return NextResponse.redirect('/login');
+    console.log('Error getting access token:', error);
+    return NextResponse.json({ error: 'Failed to get access token'}, { status: 500 });
   }
 }
