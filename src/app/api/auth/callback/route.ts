@@ -26,13 +26,11 @@ async function getAccessToken(code: string): Promise<SpotifyTokenResponse> {
       client_id: client_id,
       client_secret: client_secret
     }).toString()
+  }).catch((error) => {
+    throw new Error('Failed to get access token', error);
   });
 
   console.log("response", response)
-
-  if (!response.ok) {
-    throw new Error('Failed to get access token');
-  }
 
   return response.json();
 }
@@ -47,12 +45,15 @@ export async function POST(req: NextRequest) {
     }
 
     const { access_token, refresh_token, expires_in } = await getAccessToken(code);
+    if (!access_token || !refresh_token || !expires_in) {
+      return NextResponse.json({ error: 'invalid_token' }, { status: 400 });
+    }
     const currentTime = Math.floor(Date.now() / 1000);
 
     const response = NextResponse.json({ success: true }, { status: 200 });
 
     // Set tokens in cookies
-    response.cookies.set('spotify-token', access_token, { maxAge: expires_in });
+    response.cookies.set('spotify-token', access_token);
     response.cookies.set('spotify-refresh-token', refresh_token);
     response.cookies.set('spotify-token-expiry', String(currentTime + expires_in));
 
